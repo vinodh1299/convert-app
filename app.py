@@ -18,8 +18,10 @@ UPLOAD_FOLDER = './uploads'
 OUTPUT_FOLDER = './output'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['OUTPUT_FOLDER'] = OUTPUT_FOLDER
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+if not os.path.exists(OUTPUT_FOLDER):
+    os.makedirs(OUTPUT_FOLDER)
 
 # Helper function to extract base filename (without folder and extension)
 def get_base_filename(filepath):
@@ -47,7 +49,7 @@ def convert_files():
         file.save(filepath)
 
         # Print the path to ensure it's correct
-        print(f'File saved at: {filepath}')
+        print ('File saved at:', filepath)
 
         try:
             if conversion_type == 'pdf_to_word':
@@ -60,7 +62,7 @@ def convert_files():
                 output_files.append(convert_image_to_pdf(filepath))
             else:
                 return jsonify({'error': 'Invalid conversion type'}), 400
-        except Exception as e:
+        except Exception, e:
             return jsonify({'error': str(e)}), 500
 
     # Check if there are any output files to zip
@@ -69,26 +71,26 @@ def convert_files():
 
     zip_path = zip_files(output_files)
     
-    return jsonify({'downloadLink': f'/download/{zip_path}'})
+    return jsonify({'downloadLink': '/download/' + zip_path})
 
 # Conversion function to handle PDF to Word conversion
 def convert_pdf_to_word(filepath):
     base_name = get_base_filename(filepath)
-    output_path = os.path.join(app.config['OUTPUT_FOLDER'], f'{base_name}.docx')
+    output_path = os.path.join(app.config['OUTPUT_FOLDER'], base_name + '.docx')
     
     try:
         cv = Converter(filepath)
         cv.convert(output_path, start=0, end=None)
         cv.close()
-    except Exception as e:
-        print(f"Error converting PDF to Word: {e}")
+    except Exception, e:
+        print ('Error converting PDF to Word:', e)
     
     return output_path
 
 # Conversion function to handle Word to PDF conversion
 def convert_word_to_pdf(filepath):
     base_name = get_base_filename(filepath)
-    output_path = os.path.join(app.config['OUTPUT_FOLDER'], f'{base_name}.pdf')
+    output_path = os.path.join(app.config['OUTPUT_FOLDER'], base_name + '.pdf')
 
     pythoncom.CoInitialize()
     
@@ -105,13 +107,13 @@ def convert_word_to_pdf(filepath):
             
             try:
                 # Verify the file path
-                print(f'Attempting to open file: {abs_filepath}')
+                print ('Attempting to open file:', abs_filepath)
                 
                 doc = word.Documents.Open(abs_filepath)
                 doc.SaveAs(abs_output_path, FileFormat=17)  # 17 is the format for PDF
                 doc.Close()
-            except Exception as e:
-                print(f"Error opening or saving file: {e}")
+            except Exception, e:
+                print ('Error opening or saving file:', e)
                 raise
             finally:
                 word.Quit()
@@ -120,10 +122,10 @@ def convert_word_to_pdf(filepath):
                 'libreoffice', '--headless', '--convert-to', 'pdf',
                 '--outdir', app.config['OUTPUT_FOLDER'], filepath
             ]
-            subprocess.run(command, check=True)
+            subprocess.call(command)
     
-    except Exception as e:
-        print(f"Error in convert_word_to_pdf: {e}")
+    except Exception, e:
+        print ('Error in convert_word_to_pdf:', e)
         raise
     finally:
         pythoncom.CoUninitialize()
@@ -135,8 +137,8 @@ def convert_word_to_pdf(filepath):
 def convert_pdf_to_image(filepath):
     try:
         images = convert_from_path(filepath)
-    except Exception as e:
-        print(f"Error converting PDF to images: {e}")
+    except Exception, e:
+        print ('Error converting PDF to images:', e)
         return []
 
     output_paths = []
@@ -144,31 +146,31 @@ def convert_pdf_to_image(filepath):
 
     for i, image in enumerate(images):
         if len(images) == 1:
-            output_filename = f'{base_name}.jpg'
+            output_filename = base_name + '.jpg'
         else:
-            output_filename = f'{base_name}.jpg'
+            output_filename = base_name + '.jpg'
         
         output_path = os.path.join(app.config['OUTPUT_FOLDER'], output_filename)
         try:
             image.save(output_path, 'JPEG')
             output_paths.append(output_path)
-        except Exception as e:
-            print(f"Error saving image {output_filename}: {e}")
+        except Exception, e:
+            print ('Error saving image', output_filename, ':', e)
 
     return output_paths
 
 # Conversion function to handle Image to PDF conversion
 def convert_image_to_pdf(filepath):
     base_name = get_base_filename(filepath)
-    output_path = os.path.join(app.config['OUTPUT_FOLDER'], f'{base_name}.pdf')
+    output_path = os.path.join(app.config['OUTPUT_FOLDER'], base_name + '.pdf')
     
     pdf = FPDF()
     pdf.add_page()
     try:
         pdf.image(filepath, x=10, y=10, w=190)
-        pdf.output(output_path)
-    except Exception as e:
-        print(f"Error creating PDF from image: {e}")
+        pdf.output(output_path, 'F ')
+    except Exception, e:
+        print ('Error creating PDF from image:', e)
     
     return output_path
 
@@ -182,7 +184,7 @@ def zip_files(file_paths):
             if os.path.isfile(file_path):  # Check if file exists
                 zipf.write(file_path, os.path.basename(file_path))
             else:
-                print(f"File not found for zipping: {file_path}")
+                print ('File not found for zipping:', file_path)
     
     return zip_filename
 
@@ -196,8 +198,8 @@ def clear_folders():
                     os.unlink(file_path)
                 elif os.path.isdir(file_path):
                     shutil.rmtree(file_path)
-            except Exception as e:
-                print(f'Failed to delete {file_path}. Reason: {e}')
+            except Exception, e:
+                print ('Failed to delete', file_path, '. Reason:', e)
 
 # Route to serve the zipped files and clear folders afterward
 @app.route('/download/<zip_filename>')
@@ -209,8 +211,8 @@ def download(zip_filename):
 
     try:
         response = send_file(zip_path, as_attachment=True)
-    except Exception as e:
-        print(f"Error sending file: {e}")
+    except Exception, e:
+        print ('Error sending file:', e)
         return jsonify({'error': 'Error sending file'}), 500
     
     # Clear the upload and output folders after the file is sent
