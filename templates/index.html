@@ -4,25 +4,58 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>File Converter</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-    <h1>File Converter</h1>
-    <form action="/convert" method="post" enctype="multipart/form-data">
-        <label for="conversion_type">Select Conversion Type:</label><br>
-        <select id="conversion_type" name="conversion_type">
-            <option value="pdf_to_word">PDF to Word</option>
-            <option value="word_to_pdf">Word to PDF</option>
-            <option value="image_to_pdf">Image to PDF</option>
-            <option value="pdf_to_image">PDF to Image</option>
-        </select><br><br>
+    <div class="container">
+        <h1>File Converter</h1>
 
-        <label for="input_zip">Select Input ZIP File:</label><br>
-        <input type="file" id="input_zip" name="input_zip" accept=".zip"><br><br>
+        <!-- Toggle between Single/Multiple File or Folder Selection -->
+        <label for="selectionType">Select Input Type:</label>
+        <select id="selectionType" onchange="toggleSelectionType()">
+            <option value="file">Single/Multiple Files</option>
+            <option value="folder">Folder</option>
+        </select>
 
-        <label for="output_folder">Select Output Folder:</label><br>
-        <input type="text" id="output_folder" name="output_folder" placeholder="/path/to/output/folder"><br><br>
+        <!-- File Upload Section -->
+        <form id="uploadForm" enctype="multipart/form-data">
+            <!-- Single or Multiple File Input -->
+            <div id="fileInputContainer">
+                <label for="fileInput">Select Files:</label>
+                <input type="file" id="fileInput" name="files" multiple>
+            </div>
 
-        <input type="submit" value="Convert">
-    </form>
+            <!-- Folder Input -->
+            <div id="folderInputContainer" style="display:none;">
+                <label for="folderInput">Select Folder:</label>
+                <input type="file" id="folderInput" name="folder" webkitdirectory multiple>
+            </div>
+
+            <!-- Conversion Type Selection -->
+            <label for="conversionType">Select Conversion Type:</label>
+            <select id="conversionType">
+                <option value="pdf_to_word">PDF to Word</option>
+                <option value="word_to_pdf">Word to PDF</option>
+                <option value="pdf_to_image">PDF to Image</option>
+                <option value="image_to_pdf">Image to PDF</option>
+            </select>
+
+            <!-- Submit Button -->
+            <button type="submit">Convert Files</button>
+        </form>
+
+        <!-- Progress Section -->
+        <div id="progressContainer" style="display:none;">
+            <p>Converting files, please wait...</p>
+            <div id="progressBar"></div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultContainer" style="display:none;">
+            <p>Conversion complete! <a id="downloadLink" href="#">Download Files</a></p>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='scripts.js') }}"></script>
 </body>
 </html>
